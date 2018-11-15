@@ -40,11 +40,13 @@ class MydataSet(torch.utils.data.Dataset):
             if len(label) < 2:
                 s = label[0]
                 label.append(s)
-
             a[self._classes.index(label[0])] = 1
+            label[0] = a
+            a[self._classes.index(label[1])] = 1
+            label[1] = a
             #print(a)
            # print(a[self._classes.index(label[0])])
-            imgs.append((input, a))
+            imgs.append((input, label))
             self.imgs = imgs
             self.transform = transform
             self.target_transform = target_transform
