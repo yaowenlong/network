@@ -25,7 +25,7 @@ class VGG(nn.Module):
     def __init__(self, features, num_classes=21, init_weights=True):
         super(VGG, self).__init__()
         self.features = features
-
+        self.attention = 1
         self.classifier = nn.Sequential(
             nn.Linear(512 * 7 * 7, 4096),
             nn.ReLU(True),
@@ -38,13 +38,15 @@ class VGG(nn.Module):
         if init_weights:
             self._initialize_weights()
 
-    def forward(self, x,inpuattention):
+    def forward(self, x):
         x = self.features(x)
         out_attention = x
-        x = x * inpuattention
+        x = x * self.attention
         x = x.view(x.size(0), -1)
         x = self.classifier(x)
         return x,out_attention
+    def getattention(self,attention):
+        self.attention = attention
 
     def _initialize_weights(self):
         for m in self.modules():

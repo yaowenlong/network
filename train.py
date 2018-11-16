@@ -25,8 +25,8 @@ train_data = VOC.MydataSet(xmlpath,imgpath,transform=transform, target_transform
 test_data = VOC.MydataSet(xmlpath,imgpath,transform=transform, target_transform=None)
 train_loader = DataLoader(dataset=train_data, batch_size=1, shuffle=True)
 test_loader = DataLoader(dataset=train_data, batch_size=1, shuffle=True)
-net1 = network.vgg13_bn()
-net2 = network.vgg13_bn()
+net1 = network.vgg13_bn().cuda()
+net2 = network.vgg13_bn().cuda()
 optimizer = optim.SGD(net1.parameters(), lr=0.001, momentum=0.9)
 optimizer2 = optim.SGD(net2.parameters(), lr=0.001, momentum=0.9)
 attention2 = 1
@@ -36,18 +36,21 @@ for epoch in range(2):  # loop over the dataset multiple times
     for i, data in enumerate(train_loader, 0):
         # get the inputs
         inputs, labels = data
-
+        inputs = inputs.cuda()
+        labels1 = labels[0].cuda()
+        labels2 = labels[1].cuda()
         #print(labels)
         # zero the parameter gradients
         optimizer.zero_grad()
 
         # forward + backward + optimize
-
-        outputs1,attention1 = net1(inputs,attention2)
-        outputs2,attention2 = net2(inputs,attention1)
-        loss = criterion(outputs1, labels[0])
+        net1.getattention(attention2)
+        outputs1,attention1 = net1(inputs)
+        net2.getattention(attention1)
+        outputs2,attention2 = net2(inputs)
+        loss = criterion(outputs1, labels1)
         loss.backward(retain_graph=True)
-        loss2 = criterion(outputs1, labels[1])
+        loss2 = criterion(outputs1, labels2)
         loss2.backward(retain_graph=True)
         optimizer.step()
         optimizer2.step()
@@ -59,11 +62,13 @@ for epoch in range(2):  # loop over the dataset multiple times
             running_loss = 0.0
 correct = 0
 total = 0
+
 with torch.no_grad():
     for data in test_loader:
         images, labels = data
-        outputs = net1(images)
+        outputs,_ = net1(images)
         _, predicted = torch.max(outputs.data, 1)
+        predicted = predicted.float()
         total += labels[0].size(0)
         correct += (predicted == labels[0]).sum().item()
 
